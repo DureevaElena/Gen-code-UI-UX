@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h1>Form Builder{% if project %} - {{ project.name }}{% endif %}</h1>
+
+    <div class="controls mb-3">
+        <div class="input-group mb-2">
+            <input type="text" id="form-name" class="form-control" placeholder="Имя формы" value="{% if project %}{{ project.name }}{% else %}Untitled Form{% endif %}">
+        </div>
+        <button onclick="showStyleEditor('input')" class="btn btn-primary me-2">Add Input</button>
+        <button onclick="showStyleEditor('button')" class="btn btn-primary me-2">Add Button</button>
+        <button onclick="generateCodeLocally()" class="btn btn-success me-2">Generate HTML/CSS</button>
+        <button onclick="generateReactCode()" class="btn btn-success me-2">Generate React Code</button>
+        <button onclick="applyCustomCss()" class="btn btn-secondary me-2">Apply CSS</button>
+        <button onclick="toggleOrientation()" class="btn btn-secondary me-2">Toggle Orientation</button>
+        <button onclick="saveForm()" class="btn btn-info">Save Form</button>
+    </div>
+
+    <h2>Form Preview</h2>
+    <div id="form-preview" ondragover="allowDrop(event)" ondrop="drop(event)" class="mb-4"></div>
+
+    <h2>Generated Code</h2>
+    <div class="row">
+        <div class="col-md-6">
+            <h3>HTML</h3>
+            <textarea id="html-output" class="form-control" readonly></textarea>
+        </div>
+        <div class="col-md-6">
+            <h3>CSS (HTML)</h3>
+            <textarea id="css-output" class="form-control"></textarea>
+        </div>
+    </div>
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <h3>React (JSX)</h3>
+            <textarea id="react-output" class="form-control" readonly></textarea>
+        </div>
+        <div class="col-md-6">
+            <h3>CSS (React)</h3>
+            <textarea id="react-css-output" class="form-control"></textarea>
+        </div>
+    </div>
+
+    <!-- Style Editor Modal -->
+    <div id="style-editor-modal" class="modal">
+        <div class="modal-content">
+            <h3>Add Element</h3>
+            <div class="mb-3">
+                <label for="element-text" class="form-label">Text (Placeholder for input, Text for button):</label>
+                <input type="text" id="element-text" class="form-control" placeholder="e.g., Enter text... or Click me">
+            </div>
+            <div class="mb-3">
+                <label for="style-bg-color" class="form-label">Background Color:</label>
+                <input type="color" id="style-bg-color" class="form-control form-control-color">
+            </div>
+            <div class="mb-3">
+                <label for="style-text-color" class="form-label">Text Color:</label>
+                <input type="color" id="style-text-color" class="form-control form-control-color">
+            </div>
+            <div class="mb-3">
+                <label for="style-font-size" class="form-label">Font Size (px):</label>
+                <input type="number" id="style-font-size" class="form-control" min="0" placeholder="e.g., 16">
+            </div>
+            <div class="mb-3">
+                <label for="style-padding" class="form-label">Padding (px):</label>
+                <input type="number" id="style-padding" class="form-control" min="0" placeholder="e.g., 10">
+            </div>
+            <div class="mb-3">
+                <label for="style-margin" class="form-label">Margin (px):</label>
+                <input type="number" id="style-margin" class="form-control" min="0" placeholder="e.g., 10">
+            </div>
+            <div class="mb-3">
+                <label for="style-border-width" class="form-label">Border Width (px):</label>
+                <input type="number" id="style-border-width" class="form-control" min="0" placeholder="e.g., 1">
+            </div>
+            <div class="mb-3">
+                <label for="style-border-color" class="form-label">Border Color:</label>
+                <input type="color" id="style-border-color" class="form-control form-control-color">
+            </div>
+            <div class="button-group">
+                <button onclick="cancelStyleEditor()" class="btn btn-secondary">Cancel</button>
+                <button onclick="submitStyleEditor()" class="btn btn-primary">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #form-preview {
+        border: 1px solid #ccc;
+        padding: 20px;
+        min-height: 100px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        background-color: #f8f9fa;
+    }
+    .element {
+        padding: 5px;
+        border: 1px dashed #ccc;
+        cursor: move;
+        flex: 0 0 auto;
+    }
+    .element:hover {
+        background-color: #e9ecef;
+    }
+    textarea {
+        width: 100%;
+        height: 200px;
+        margin-top: 10px;
+    }
+    .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+    .modal-content {
+        background-color: white;
+        padding: 20px;
+        border-radius: 5px;
+        width: 400px;
+        max-width: 90%;
+    }
+    .modal-content h3 {
+        margin-top: 0;
+    }
+    .button-group {
+        margin-top: 20px;
+        text-align: right;
+    }
+    .button-group button {
+        margin-left: 10px;
+    }
+</style>
+
+<script src="{% static 'projects/scripts.js' %}"></script>
+{% endblock %}

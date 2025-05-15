@@ -3,8 +3,6 @@ from .forms import UserCreationForm
 from django.views import View
 from django.shortcuts import render, redirect
 
-
-
 class Register(View):
     template_name = 'registration/register.html'
 
@@ -28,3 +26,5 @@ class Register(View):
             'form': form
         }
         return render(request, self.template_name, context)
+
+

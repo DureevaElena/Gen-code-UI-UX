@@ -5,13 +5,48 @@
     <hr>
 
     {% if user.is_authenticated %}
+        <div id="create-project-section">
+            <a href="#" onclick="showCreateProjectForm()" class="btn btn-primary">Создать проект</a>
+        </div>
+        <div id="project-form" style="display: none; margin-top: 20px;">
+            <form action="{% url 'create_project' %}" method="post" id="project-name-form">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="project-name" class="form-label">Название проекта:</label>
+                    <input type="text" class="form-control" id="project-name" name="project_name" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Создать</button>
+                <button type="button" class="btn btn-secondary" onclick="hideCreateProjectForm()">Отмена</button>
+            </form>
+        </div>
+        <div class="mt-3">
+            <a href="{% url 'project_list' %}" class="btn btn-outline-secondary">Список всех проектов</a>
+        </div>
+
+
+
+
+        <br><br>
         <form action="{% url 'logout' %}" method="post">
             {% csrf_token %}
             <button type="submit">Log out</button>
         </form>
+
     {% else %}
         <a href="{% url 'login' %}">Login</a> |
         <a href="{% url 'register' %}">Register</a>
 
     {% endif %}
+    <script>
+        function showCreateProjectForm() {
+            document.getElementById('create-project-section').style.display = 'none';
+            document.getElementById('project-form').style.display = 'block';
+        }
+
+        function hideCreateProjectForm() {
+            document.getElementById('project-form').style.display = 'none';
+            document.getElementById('create-project-section').style.display = 'block';
+            document.getElementById('project-name').value = '';
+        }
+    </script>
 {% endblock %}
