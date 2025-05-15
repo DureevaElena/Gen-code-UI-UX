@@ -8,10 +8,6 @@ from .models import Project
 @ensure_csrf_cookie
 @login_required
 def form_builder(request, project_id=None):
-    """
-    Отображает страницу Form Builder для авторизованных пользователей.
-    Если project_id передан, загружает данные проекта.
-    """
     project = None
     if project_id:
         project = Project.objects.filter(id=project_id, user=request.user).first()
@@ -70,16 +66,30 @@ def save_form(request):
             css_code = data.get('css_code', '')
             react_code = data.get('react_code', '')
             react_css_code = data.get('react_css_code', '')
+            elements_data = data.get('elements', [])  # Получаем массив элементов
 
-            project = Project(
-                user=request.user,
-                name=form_name,
-                html_code=html_code,
-                css_code=css_code,
-                react_code=react_code,
-                react_css_code=react_css_code
-            )
-            project.save()
+            # Проверяем, существует ли проект (например, по имени и пользователю)
+            project = Project.objects.filter(name=form_name, user=request.user).first()
+            if project:
+                # Обновляем существующий проект
+                project.html_code = html_code
+                project.css_code = css_code
+                project.react_code = react_code
+                project.react_css_code = react_css_code
+                project.elements = elements_data
+                project.save()
+            else:
+                # Создаём новый проект
+                project = Project(
+                    user=request.user,
+                    name=form_name,
+                    html_code=html_code,
+                    css_code=css_code,
+                    react_code=react_code,
+                    react_css_code=react_css_code,
+                    elements=elements_data
+                )
+                project.save()
             return JsonResponse({'status': 'success'})
         except json.JSONDecodeError:
             return JsonResponse({'status': 'error', 'error': 'Invalid JSON data'}, status=400)
@@ -91,7 +101,6 @@ def save_form(request):
 def project_list(request):
     projects = Project.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'projects/project_list.html', {'projects': projects})
-
 @login_required
 def create_project(request):
     if request.method == 'POST':
@@ -104,7 +113,6 @@ def create_project(request):
                 css_code=''
             )
             project.save()
-            # Перенаправляем на Form Builder с ID созданного проекта
             return redirect('form_builder', project_id=project.id)
         else:
             return render(request, 'home.html', {'error': 'Название проекта не может быть пустым'})
