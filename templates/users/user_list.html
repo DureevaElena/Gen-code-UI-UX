@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2 class="mt-4">Список всех пользователей</h2>
+    {% if users %}
+        <ul class="list-group mb-4">
+            {% for user in users %}
+                <li class="list-group-item d-flex justify-content-between align-items-center" data-user-id="{{ user.id }}">
+                    <span>{{ user.username }} ({{ user.email }})</span>
+                    <button onclick="deleteUser({{ user.id }})" class="btn btn-sm btn-outline-danger">Удалить</button>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Пока нет пользователей.</p>
+    {% endif %}
+    <a href="{% url 'home' %}" class="btn btn-secondary">Назад</a>
+
+    <script>
+        async function deleteUser(userId) {
+            if (!confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/users/delete/${userId}/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Ошибка сервера: ' + response.status);
+                }
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert('Пользователь успешно удалён!');
+                    // Удаляем элемент из DOM
+                    document.querySelector(`li[data-user-id="${userId}"]`)?.remove();
+                    // Если больше нет пользователей, показываем сообщение
+                    if (!document.querySelector('ul.list-group').children.length) {
+                        document.querySelector('ul.list-group').outerHTML = '<p>Пока нет пользователей.</p>';
+                    }
+                } else {
+                    alert('Ошибка при удалении пользователя: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Произошла ошибка: ' + error.message);
+            }
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+{% endblock %}

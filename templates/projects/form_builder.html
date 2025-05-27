@@ -13,7 +13,6 @@
         <button onclick="showStyleEditor('button')" class="btn btn-primary me-2">Add Button</button>
         <button onclick="generateCodeLocally()" class="btn btn-success me-2">Generate HTML/CSS</button>
         <button onclick="generateReactCode()" class="btn btn-success me-2">Generate React Code</button>
-        <button onclick="applyCustomCss()" class="btn btn-secondary me-2">Apply CSS</button>
         <button onclick="saveForm()" class="btn btn-info">Save Form</button>
     </div>
 
@@ -47,8 +46,8 @@
     <div class="modal-content">
         <h3 id="style-editor-title">Add Element</h3>
         <div class="mb-3">
-            <label for="element-text" class="form-label">Text (Placeholder for input, Text for button):</label>
-            <input type="text" id="element-text" class="form-control" placeholder="e.g., Enter text... or Click me">
+            <label for="element-text" class="form-label">Text (Placeholder for input, Text for button, Text for header):</label>
+            <input type="text" id="element-text" class="form-control" placeholder="e.g., Enter text..., Click me, or Form Title">
         </div>
         <div class="mb-3">
             <label for="style-bg-color" class="form-label">Background Color:</label>
@@ -86,13 +85,14 @@
     </div>
 </div>
 
+
 <style>
     #form-preview {
         border: 1px solid #ccc;
         padding: 20px;
-        min-height: 300px; /* Увеличим высоту для удобства */
-        position: relative; /* Контейнер для абсолютного позиционирования */
-        display: block; /* Уберём flex, так как будем использовать absolute */
+        min-height: 300px;
+        position: relative;
+        display: block;
         background-color: #f8f9fa;
         overflow: auto;
     }
@@ -100,7 +100,7 @@
         padding: 5px;
         border: 1px dashed #ccc;
         cursor: move;
-        position: absolute; /* Абсолютное позиционирование для каждого элемента */
+        position: absolute;
         flex: 0 0 auto;
         width: fit-content;
     }
@@ -139,6 +139,17 @@
     .modal-content h3 {
         margin-top: 0;
     }
+    .mb-3 {
+        display: block; /* Гарантируем, что контейнер для input видим */
+    }
+    #element-text {
+        display: block; /* Убедимся, что поле ввода видимо */
+        width: 100%; /* Полная ширина */
+        padding: 8px;
+        margin-top: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
     .button-group {
         margin-top: 20px;
         text-align: right;
@@ -163,7 +174,9 @@
     .context-menu-item:hover {
         background-color: #f0f0f0;
     }
+
 </style>
+
 
 <!-- Контекстное меню для удаления и редактирования -->
 <div id="context-menu" class="context-menu">
@@ -178,7 +191,7 @@
     // Загружаем элементы из проекта, если они есть
     {% if project and project.elements %}
         elements = {{ project.elements|safe }};
-        updatePreview();  // Обновляем превью при загрузке
+        updatePreview();
     {% endif %}
 </script>
 {% endblock %}

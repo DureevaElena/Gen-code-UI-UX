@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 import json
 from .models import Project
 
@@ -21,35 +21,52 @@ def generate_code(request):
             elements = data.get('elements', [])
             form_name = data.get('name', 'Untitled Form')
 
-            html_code = '<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <title>Generated Form</title>\n    <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n    <form style="display: flex; flex-direction: row; gap: 10px;">\n'
+            html_code = '<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <title>Generated Form</title>\n    <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n    <div style="position: relative; min-height: 300px; border: 1px solid #ccc; padding: 20px; overflow: auto;">\n'
             css_code = 'body {\n    font-family: Arial, sans-serif;\n}\n'
 
             for idx, element in enumerate(elements):
                 element_id = f"{element['type']}{idx}"
-                if element['type'] == 'input':
-                    html_code += f'        <input type="text" placeholder="{element["placeholder"]}" id="{element_id}">\n'
+                if element['type'] == 'header':
+                    text = element.get('text', 'Default Header')  # Установка значения по умолчанию
+                    html_code += f'        <div style="position: absolute; left: {element.get("left", 0)}px; top: {element.get("top", 0)}px;">\n'
+                    html_code += f'            <h2 id="{element_id}">{text}</h2>\n'
+                    html_code += '        </div>\n'
+                elif element['type'] == 'input':
+                    placeholder = element.get('placeholder', 'Enter text...')
+                    html_code += f'        <div style="position: absolute; left: {element.get("left", 0)}px; top: {element.get("top", 0)}px;">\n'
+                    html_code += f'            <input type="text" placeholder="{placeholder}" id="{element_id}">\n'
+                    html_code += '        </div>\n'
                 elif element['type'] == 'button':
-                    html_code += f'        <button id="{element_id}">{element["text"]}</button>\n'
+                    text = element.get('text', 'Click me')
+                    html_code += f'        <div style="position: absolute; left: {element.get("left", 0)}px; top: {element.get("top", 0)}px;">\n'
+                    html_code += f'            <button id="{element_id}">{text}</button>\n'
+                    html_code += '        </div>\n'
 
                 if element.get('customStyles'):
                     css_code += f'#{element_id} {{\n    {element["customStyles"]};\n}}\n'
                 else:
-                    if element['type'] == 'input':
+                    if element['type'] == 'header':
+                        css_code += f'#{element_id} {{\n    font-size: 24px;\n    margin: 10px;\n}}\n'
+                    elif element['type'] == 'input':
                         css_code += f'#{element_id} {{\n    padding: 10px;\n    margin: 10px;\n    border: 1px solid #ccc;\n    border-radius: 4px;\n}}\n'
                     elif element['type'] == 'button':
                         css_code += f'#{element_id} {{\n    padding: 10px 20px;\n    margin: 10px;\n    background-color: #007BFF;\n    color: white;\n    border: none;\n    border-radius: 4px;\n    cursor: pointer;\n}}\n#{element_id}:hover {{\n    background-color: #0056b3;\n}}\n'
 
-            html_code += '    </form>\n</body>\n</html>'
+            html_code += '    </div>\n</body>\n</html>'
+
+            # Отладка: выведем элементы в лог
+            print("Received elements:", elements)
 
             project = Project(
                 user=request.user,
                 name=form_name,
                 html_code=html_code,
-                css_code=css_code
+                css_code=css_code,
+                elements=elements  # Сохраняем элементы в модель
             )
             project.save()
 
-            return JsonResponse({'html': html_code, 'css': css_code})
+            return JsonResponse({'html': html_code, 'css': css_code, 'elements': elements})  # Возвращаем элементы клиенту
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON data'}, status=400)
         except Exception as e:
@@ -66,12 +83,10 @@ def save_form(request):
             css_code = data.get('css_code', '')
             react_code = data.get('react_code', '')
             react_css_code = data.get('react_css_code', '')
-            elements_data = data.get('elements', [])  # Получаем массив элементов
+            elements_data = data.get('elements', [])
 
-            # Проверяем, существует ли проект (например, по имени и пользователю)
             project = Project.objects.filter(name=form_name, user=request.user).first()
             if project:
-                # Обновляем существующий проект
                 project.html_code = html_code
                 project.css_code = css_code
                 project.react_code = react_code
@@ -79,7 +94,6 @@ def save_form(request):
                 project.elements = elements_data
                 project.save()
             else:
-                # Создаём новый проект
                 project = Project(
                     user=request.user,
                     name=form_name,
@@ -101,6 +115,7 @@ def save_form(request):
 def project_list(request):
     projects = Project.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'projects/project_list.html', {'projects': projects})
+
 @login_required
 def create_project(request):
     if request.method == 'POST':
@@ -117,3 +132,20 @@ def create_project(request):
         else:
             return render(request, 'home.html', {'error': 'Название проекта не может быть пустым'})
     return render(request, 'home.html', {'error': 'Неверный запрос'})
+
+@user_passes_test(lambda u: True)
+def project_list_all(request):
+    projects = Project.objects.all()
+    return render(request, 'users/project_list.html', {'projects': projects})
+
+@csrf_exempt
+@login_required
+def delete_project(request, project_id):
+    if request.method == 'DELETE':
+        try:
+            project = Project.objects.get(id=project_id)
+            project.delete()
+            return JsonResponse({'status': 'success'})
+        except Project.DoesNotExist:
+            return JsonResponse({'status': 'error', 'error': 'Проект не найден'}, status=404)
+    return JsonResponse({'status': 'error', 'error': 'Метод не поддерживается'}, status=405)

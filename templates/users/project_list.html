@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2 class="mt-4">Список всех проектов</h2>
+    {% if projects %}
+        <ul class="list-group mb-4">
+            {% for project in projects %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between w-100">
+                        <span class="project-info">{{ project.name }} (Пользователь: {{ project.user.username }})</span>
+                        <span class="project-date">Создан: {{ project.created_at|date:"d.m.Y H:i"}}</span>
+                    </div>
+                    <div style="margin-left: 20px; margin-right: 20px;">
+<!--                        <a href="{% url 'form_builder' project.id %}" class="btn btn-sm btn-outline-primary mr-2">Редактировать</a>-->
+                        <button onclick="deleteProject({{ project.id }})" class="btn btn-sm btn-outline-danger">Удалить</button>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Пока нет проектов.</p>
+    {% endif %}
+    <a href="{% url 'home' %}" class="btn btn-secondary">Назад</a>
+
+    <style>
+        .project-info {
+            flex: 1;
+            overflow-wrap: break-word;
+        }
+        .project-date {
+            flex-shrink: 0;
+            margin-left: 15px;
+            white-space: nowrap;
+        }
+    </style>
+
+    <script>
+        async function deleteProject(projectId) {
+            if (!confirm('Вы уверены, что хотите удалить этот проект?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/projects/delete/${projectId}/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Ошибка сервера: ' + response.status);
+                }
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert('Проект успешно удалён!');
+                    // Удаляем элемент из DOM
+                    document.querySelector(`li[data-project-id="${projectId}"]`)?.remove();
+                    // Если больше нет проектов, показываем сообщение
+                    if (!document.querySelector('ul.list-group').children.length) {
+                        document.querySelector('ul.list-group').outerHTML = '<p>Пока нет проектов.</p>';
+                    }
+                } else {
+                    alert('Ошибка при удалении проекта: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Произошла ошибка: ' + error.message);
+            }
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+{% endblock %}
