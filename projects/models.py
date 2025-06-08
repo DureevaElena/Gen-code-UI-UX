@@ -10,7 +10,7 @@ class Project(models.Model):
     react_code = models.TextField(blank=True)
     react_css_code = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    elements = models.JSONField(default=list, blank=True)  # Новое поле для хранения элементов
+    elements = models.JSONField(default=list, blank=True)
 
     def __str__(self):
         return f"{self.name} by {self.user.username}"
