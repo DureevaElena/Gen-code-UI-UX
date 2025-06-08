@@ -2,9 +2,9 @@
 {% load static %}
 
 {% block content %}
-<div class="container mt-4">
+<main class="container mt-4">
     <!-- Заголовок и кнопки генерации кода -->
-    <div class="row align-items-center mb-4">
+    <header class="row align-items-center mb-4">
         <div class="col-md-6 col-12">
             <h1>Конструктор форм{% if project %} - {{ project.name }}{% endif %}</h1>
         </div>
@@ -12,13 +12,14 @@
             <button onclick="generateCodeLocally()" class="btn btn-success me-2">Сгенерировать HTML/CSS</button>
             <button onclick="generateReactCode()" class="btn btn-success">Сгенерировать React-код</button>
         </div>
-    </div>
+    </header>
 
-    <div class="row">
+    <section class="row">
         <!-- Левая колонка: Кнопки управления -->
-        <div class="col-md-3 col-12 mb-3">
+        <aside class="col-md-3 col-12 mb-3">
             <div class="controls d-flex flex-column gap-2">
                 <div class="input-group">
+                    <label for="form-name" class="visually-hidden">Имя формы</label>
                     <input type="text" id="form-name" class="form-control" placeholder="Имя формы" value="{% if project %}{{ project.name }}{% else %}Безымянная форма{% endif %}">
                 </div>
                 <div class="input-group">
@@ -41,39 +42,43 @@
                 <button onclick="showStyleEditor('image')" class="btn btn-primary">Добавить изображение</button>
                 <button onclick="saveForm()" class="btn btn-info">Сохранить форму</button>
             </div>
-        </div>
+        </aside>
 
         <!-- Правая колонка: Предпросмотр и код -->
-        <div class="col-md-9 col-12">
+        <section class="col-md-9 col-12">
             <h2>Предпросмотр формы</h2>
-            <div id="form-preview" ondragover="allowDrop(event)" ondrop="drop(event)" class="mb-4"></div>
+            <section id="form-preview" class="form-container" ondragover="allowDrop(event)" ondrop="drop(event)">
+                <form id="generated-form">
+                    <!-- Элементы формы будут добавляться динамически через JS -->
+                </form>
+            </section>
 
             <h2>Сгенерированный код</h2>
             <div class="row">
-                <div class="col-md-6">
+                <section class="col-md-6">
                     <h3>HTML</h3>
                     <textarea id="html-output" class="form-control" readonly></textarea>
-                </div>
-                <div class="col-md-6">
+                </section>
+                <section class="col-md-6">
                     <h3>CSS</h3>
                     <textarea id="css-output" class="form-control"></textarea>
-                </div>
+                </section>
             </div>
             <div class="row mt-3">
-                <div class="col-md-6">
+                <section class="col-md-6">
                     <h3>React (JSX)</h3>
                     <textarea id="react-output" class="form-control" readonly></textarea>
-                </div>
-                <div class="col-md-6">
+                </section>
+                <section class="col-md-6">
                     <h3>CSS (React)</h3>
                     <textarea id="react-css-textarea" class="form-control"></textarea>
-                </div>
+                </section>
             </div>
-        </div>
-    </div>
+        </section>
+    </section>
 
     <!-- Модальное окно редактора стилей -->
-    <div id="style-editor-modal" class="modal">
+    <dialog id="style-editor-modal" class="modal">
         <div class="modal-content">
             <h3 id="style-editor-title">Добавить элемент</h3>
             <div class="mb-3" id="element-text-container">
@@ -117,7 +122,7 @@
                 <input type="number" id="style-border-radius" class="form-control" min="0" placeholder="e.g., 4">
             </div>
             <div class="mb-3">
-                <label for="style-width">Ширина (px):</label>
+                <label for="style-width" class="form-label">Ширина (px):</label>
                 <input type="number" id="style-width" class="form-control" min="0" placeholder="e.g., 200">
             </div>
             <div class="mb-3">
@@ -133,14 +138,14 @@
                 <button onclick="submitStyleEditor()" class="btn btn-primary" id="style-editor-submit">Добавить</button>
             </div>
         </div>
-    </div>
+    </dialog>
 
     <!-- Контекстное меню для удаления и редактирования -->
     <div id="context-menu" class="context-menu">
         <div class="context-menu-item" onclick="editElement()">Редактировать</div>
         <div class="context-menu-item" onclick="deleteElement()">Удалить</div>
     </div>
-</div>
+</main>
 
 <style>
     #form-preview {
@@ -271,6 +276,7 @@
         const formPreview = document.getElementById('form-preview');
         formPreview.style.width = `${width}px`;
         formPreview.style.height = `${height}px`;
+        updatePreview(); // Перезапускаем предпросмотр для пересчета размеров
     }
 
     // Устанавливаем начальный размер формы при загрузке
