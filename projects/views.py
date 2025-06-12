@@ -1,3 +1,4 @@
+# views.py
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -24,24 +25,19 @@ def upload_image(request):
             if not image:
                 return JsonResponse({'status': 'error', 'error': 'Файл не предоставлен'}, status=400)
 
-            # Проверка, что файл является изображением
             if not image.content_type.startswith('image/'):
                 return JsonResponse({'status': 'error', 'error': 'Файл должен быть изображением'}, status=400)
 
-            # Создание директории для загрузок
             upload_dir = os.path.join(settings.MEDIA_ROOT, 'uploads')
             os.makedirs(upload_dir, exist_ok=True)
 
-            # Генерация уникального имени файла
             file_name = f"{request.user.id}_{image.name}"
             file_path = os.path.join(upload_dir, file_name)
 
-            # Сохранение файла
             with open(file_path, 'wb+') as destination:
                 for chunk in image.chunks():
                     destination.write(chunk)
 
-            # Возвращаем относительный путь
             relative_path = os.path.join('uploads', file_name).replace('\\', '/')
             return JsonResponse({'status': 'success', 'file_path': f'/media/{relative_path}'})
         except Exception as e:
@@ -56,47 +52,153 @@ def generate_code(request):
             elements = data.get('elements', [])
             form_name = data.get('name', 'Безымянная форма')
 
-            html_code = '<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <title>Generated Form</title>\n    <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n'
-            css_code = 'body {\n    font-family: Arial, sans-serif;\n    margin: 0;\n    padding: 0;\n}\n'
+            # Начало HTML-кода
+            html_code = '''<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generated Form</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            min-height: 100vh;
+        }
+        header {
+            background-color: #cce5ff;
+            padding: 20px;
+            border-bottom: 2px solid #339;
+        }
+        main {
+            background-color: #e6ffe6;
+            padding: 20px;
+        }
+        footer {
+            background-color: #dcdcdc;
+            text-align: center;
+            padding: 10px;
+            border-top: 2px solid #666;
+        }
+'''
+            css_code = ''
 
-            for idx, element in enumerate(elements):
-                element_id = f"{element['type']}{idx}"
-                html_code += f'    <div style="position: absolute; left: {element.get("left", 0)}px; top: {element.get("top", 0)}px;">\n'
-                if element['type'] == 'input':
-                    placeholder = element.get('placeholder', 'Введите текст...')
-                    html_code += f'        <input type="text" placeholder="{placeholder}" id="{element_id}" aria-label="{placeholder or "Поле ввода"}">\n'
-                elif element['type'] == 'button':
-                    text = element.get('text', 'Нажми меня')
-                    html_code += f'        <button id="{element_id}" aria-label="{text or "Кнопка"}">{text}</button>\n'
-                elif element['type'] == 'line':
-                    html_code += f'        <hr id="{element_id}" role="separator" aria-label="Горизонтальная линия">\n'
-                elif element['type'] == 'heading':
-                    text = element.get('text', 'Заголовок')
-                    html_code += f'        <h1 id="{element_id}" aria-label="{text or "Заголовок"}">{text}</h1>\n'
-                elif element['type'] == 'rectangle':
-                    html_code += f'        <div id="{element_id}" role="img" aria-label="Прямоугольник"></div>\n'
-                elif element['type'] == 'image':
-                    file_path = element.get('file_path', '/media/uploads/placeholder.jpg')
-                    html_code += f'        <img src="{file_path}" id="{element_id}" alt="Изображение" aria-label="Изображение">\n'
-                html_code += '    </div>\n'
+            # Разделение элементов по секциям
+            header_elements = []
+            main_elements = []
+            footer_elements = []
 
-                if element.get('customStyles'):
-                    css_code += f'#{element_id} {{\n    {element["customStyles"]};\n}}\n'
+            for element in elements:
+                section = element.get('section', 'main')
+                if section == 'header':
+                    header_elements.append(element)
+                elif section == 'footer':
+                    footer_elements.append(element)
+                else:
+                    main_elements.append(element)
+
+            # Функция для генерации HTML и CSS для элемента
+            def generate_element_code(element, idx, section):
+                element_id = f"{section}-{element['type']}{idx}"
+                html = ''
+                css = ''
+                if element['type'] == 'article':
+                    html += f'    <article id="{element_id}">\n'
+                    for child_idx, child in enumerate(element.get('children', [])):
+                        child_id = f"{element_id}-child{child_idx}"
+                        if child['type'] == 'input':
+                            placeholder = child.get('placeholder', 'Введите текст...')
+                            html += f'        <input type="text" placeholder="{placeholder}" id="{child_id}" aria-label="{placeholder or "Поле ввода"}">\n'
+                        elif child['type'] == 'button':
+                            text = child.get('text', 'Нажми меня')
+                            html += f'        <button id="{child_id}" aria-label="{text or "Кнопка"}">{text}</button>\n'
+                        elif child['type'] == 'heading':
+                            text = child.get('text', 'Заголовок')
+                            html += f'        <h1 id="{child_id}" aria-label="{text or "Заголовок"}">{text}</h1>\n'
+                        elif child['type'] == 'rectangle':
+                            html += f'        <div id="{child_id}" role="img" aria-label="Прямоугольник"></div>\n'
+                        elif child['type'] == 'image':
+                            file_path = child.get('file_path', '/media/uploads/placeholder.jpg')
+                            html += f'        <img src="{file_path}" id="{child_id}" alt="Изображение" aria-label="Изображение">\n'
+                        elif child['type'] == 'line':
+                            html += f'        <hr id="{child_id}" role="separator" aria-label="Горизонтальная линия">\n'
+
+                        if child.get('customStyles'):
+                            css += f'#{child_id} {{\n    {child["customStyles"]};\n}}\n'
+                        else:
+                            if child['type'] == 'input':
+                                css += f'#{child_id} {{\n    padding: 10px;\n    margin: 10px;\n    border: 1px solid #ccc;\n    border-radius: 4px;\n}}\n'
+                            elif child['type'] == 'button':
+                                css += f'#{child_id} {{\n    padding: 10px 20px;\n    margin: 10px;\n    background-color: #007BFF;\n    color: white;\n    border: none;\n    border-radius: 4px;\n    cursor: pointer;\n}}\n#{child_id}:hover {{\n    background-color: #0056b3;\n}}\n'
+                            elif child['type'] == 'heading':
+                                css += f'#{child_id} {{\n    margin: 10px;\n    font-size: 24px;\n    font-weight: bold;\n}}\n'
+                            elif child['type'] == 'rectangle':
+                                css += f'#{child_id} {{\n    width: {child.get("width", 100)}px;\n    height: {child.get("height", 50)}px;\n    background-color: #cccccc;\n    margin: 10px;\n}}\n'
+                            elif child['type'] == 'image':
+                                css += f'#{child_id} {{\n    width: {child.get("width", 100)}px;\n    height: {child.get("height", 50)}px;\n    margin: 10px;\n    object-fit: contain;\n}}\n'
+                            elif child['type'] == 'line':
+                                css += f'#{child_id} {{\n    border: none;\n    border-top: 2px solid #000000;\n    margin: 10px;\n    width: {child.get("length", 100)}px;\n}}\n'
+                    html += '    </article>\n'
+                    css += f'#{element_id} {{\n    {element.get("customStyles", "background-color: white; padding: 10px; border: 1px solid #ccc; display: flex; flex-direction: column;")}\n}}\n'
                 else:
                     if element['type'] == 'input':
-                        css_code += f'#{element_id} {{\n    padding: 10px;\n    margin: 10px;\n    border: 1px solid #ccc;\n    border-radius: 4px;\n}}\n'
+                        placeholder = element.get('placeholder', 'Введите текст...')
+                        html += f'    <input type="text" placeholder="{placeholder}" id="{element_id}" aria-label="{placeholder or "Поле ввода"}">\n'
                     elif element['type'] == 'button':
-                        css_code += f'#{element_id} {{\n    padding: 10px 20px;\n    margin: 10px;\n    background-color: #007BFF;\n    color: white;\n    border: none;\n    border-radius: 4px;\n    cursor: pointer;\n}}\n#{element_id}:hover {{\n    background-color: #0056b3;\n}}\n'
-                    elif element['type'] == 'line':
-                        css_code += f'#{element_id} {{\n    border: none;\n    border-top: 2px solid #000000;\n    margin: 0;\n    height: 0;\n    width: {element.get("length", 100)}px;\n}}\n'
+                        text = element.get('text', 'Нажми меня')
+                        html += f'    <button id="{element_id}" aria-label="{text or "Кнопка"}">{text}</button>\n'
                     elif element['type'] == 'heading':
-                        css_code += f'#{element_id} {{\n    margin: 10px;\n    font-size: 24px;\n    font-weight: bold;\n}}\n'
+                        text = element.get('text', 'Заголовок')
+                        html += f'    <h1 id="{element_id}" aria-label="{text or "Заголовок"}">{text}</h1>\n'
                     elif element['type'] == 'rectangle':
-                        css_code += f'#{element_id} {{\n    width: {element.get("width", 100)}px;\n    height: {element.get("height", 50)}px;\n    background-color: #cccccc;\n    margin: 10px;\n}}\n'
+                        html += f'    <div id="{element_id}" role="img" aria-label="Прямоугольник"></div>\n'
                     elif element['type'] == 'image':
-                        css_code += f'#{element_id} {{\n    width: {element.get("width", 100)}px;\n    height: {element.get("height", 50)}px;\n    margin: 10px;\n    object-fit: contain;\n}}\n'
+                        file_path = element.get('file_path', '/media/uploads/placeholder.jpg')
+                        html += f'    <img src="{file_path}" id="{element_id}" alt="Изображение" aria-label="Изображение">\n'
+                    elif element['type'] == 'line':
+                        html += f'    <hr id="{element_id}" role="separator" aria-label="Горизонтальная линия">\n'
 
-            html_code += '</body>\n</html>'
+                    if element.get('customStyles'):
+                        css += f'#{element_id} {{\n    {element["customStyles"]};\n}}\n'
+                    else:
+                        if element['type'] == 'input':
+                            css += f'#{element_id} {{\n    padding: 10px;\n    margin: 10px;\n    border: 1px solid #ccc;\n    border-radius: 4px;\n}}\n'
+                        elif element['type'] == 'button':
+                            css += f'#{element_id} {{\n    padding: 10px 20px;\n    margin: 10px;\n    background-color: #007BFF;\n    color: white;\n    border: none;\n    border-radius: 4px;\n    cursor: pointer;\n}}\n#{element_id}:hover {{\n    background-color: #0056b3;\n}}\n'
+                        elif element['type'] == 'heading':
+                            css += f'#{element_id} {{\n    margin: 10px;\n    font-size: 24px;\n    font-weight: bold;\n}}\n'
+                        elif element['type'] == 'rectangle':
+                            css += f'#{element_id} {{\n    width: {element.get("width", 100)}px;\n    height: {element.get("height", 50)}px;\n    background-color: #cccccc;\n    margin: 10px;\n}}\n'
+                        elif element['type'] == 'image':
+                            css += f'#{element_id} {{\n    width: {element.get("width", 100)}px;\n    height: {element.get("height", 50)}px;\n    margin: 10px;\n    object-fit: contain;\n}}\n'
+                        elif element['type'] == 'line':
+                            css += f'#{element_id} {{\n    border: none;\n    border-top: 2px solid #000000;\n    margin: 10px;\n    width: {element.get("length", 100)}px;\n}}\n'
+                return html, css
+
+            # Генерация HTML для header
+            html_code += '    </style>\n</head>\n<body>\n<header>\n'
+            for idx, element in enumerate(header_elements):
+                h, c = generate_element_code(element, idx, 'header')
+                html_code += h
+                css_code += c
+
+            # Генерация HTML для main
+            html_code += '</header>\n<main>\n'
+            for idx, element in enumerate(main_elements):
+                h, c = generate_element_code(element, idx, 'main')
+                html_code += h
+                css_code += c
+
+            # Генерация HTML для footer
+            html_code += '</main>\n<footer>\n'
+            for idx, element in enumerate(footer_elements):
+                h, c = generate_element_code(element, idx, 'footer')
+                html_code += h
+                css_code += c
+
+            html_code += '</footer>\n</body>\n</html>'
 
             project = Project(
                 user=request.user,
@@ -113,6 +215,7 @@ def generate_code(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Неверный метод запроса'}, status=400)
+
 @login_required
 def save_form(request):
     if request.method == 'POST':

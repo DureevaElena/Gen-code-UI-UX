@@ -2,93 +2,97 @@
 {% load static %}
 
 {% block content %}
+<!-- Главный контейнер конструктора форм -->
 <main class="container mt-4">
-    <!-- Заголовок и кнопки генерации кода -->
+    <!-- Заголовок и кнопка генерации кода -->
     <header class="row align-items-center mb-4">
         <div class="col-md-6 col-12">
             <h1>Конструктор форм{% if project %} - {{ project.name }}{% endif %}</h1>
         </div>
         <div class="col-md-6 col-12 text-md-end text-start">
             <button onclick="generateCodeLocally()" class="btn btn-success me-2">Сгенерировать HTML/CSS</button>
-            <button onclick="generateReactCode()" class="btn btn-success">Сгенерировать React-код</button>
         </div>
     </header>
 
     <section class="row">
-        <!-- Левая колонка: Кнопки управления -->
+        <!-- Левая панель управления -->
         <aside class="col-md-3 col-12 mb-3">
             <div class="controls d-flex flex-column gap-2">
+                <!-- Поле для имени формы -->
                 <div class="input-group">
                     <label for="form-name" class="visually-hidden">Имя формы</label>
                     <input type="text" id="form-name" class="form-control" placeholder="Имя формы" value="{% if project %}{{ project.name }}{% else %}Безымянная форма{% endif %}">
                 </div>
+                <!-- Выбор секции -->
                 <div class="input-group">
-                    <label for="form-size" class="form-label me-2">Размер формы:</label>
-                    <select id="form-size" class="form-select" onchange="changeFormSize()">
-                        <option value="1920x1080">1920 x 1080</option>
-                        <option value="1600x900">1600 x 900</option>
-                        <option value="1440x900">1440 x 900</option>
-                        <option value="1366x768">1366 x 768</option>
-                        <option value="1280x1024">1280 x 1024</option>
-                        <option value="1280x960">1280 x 960</option>
-                        <option value="1024x600" selected>1024 x 600</option>
+                    <label for="section-select" class="form-label me-2">Добавить в:</label>
+                    <select id="section-select" class="form-select">
+                        <option value="header">Header</option>
+                        <option value="main" selected>Main</option>
+                        <option value="footer">Footer</option>
                     </select>
                 </div>
+                <!-- Кнопки добавления элементов -->
+                <button onclick="showStyleEditor('article')" class="btn btn-info">Добавить боковую панель</button>
+                <button onclick="showStyleEditor('article')" class="btn btn-info">Добавить article</button>
+                <button onclick="showStyleEditor('article')" class="btn btn-info">Добавить section</button>
+
                 <button onclick="showStyleEditor('input')" class="btn btn-primary">Добавить поле ввода</button>
                 <button onclick="showStyleEditor('button')" class="btn btn-primary">Добавить кнопку</button>
                 <button onclick="showStyleEditor('line')" class="btn btn-primary">Добавить линию</button>
                 <button onclick="showStyleEditor('heading')" class="btn btn-primary">Добавить заголовок</button>
                 <button onclick="showStyleEditor('rectangle')" class="btn btn-primary">Добавить прямоугольник</button>
                 <button onclick="showStyleEditor('image')" class="btn btn-primary">Добавить изображение</button>
+
+
+                <!-- Кнопка переключения ориентации -->
+                <button onclick="toggleOrientation()" class="btn btn-warning">Переключить ориентацию</button>
+                <!-- Кнопка сохранения -->
                 <button onclick="saveForm()" class="btn btn-info">Сохранить форму</button>
             </div>
         </aside>
 
-        <!-- Правая колонка: Предпросмотр и код -->
+        <!-- Правая часть: превью и код -->
         <section class="col-md-9 col-12">
             <h2>Предпросмотр формы</h2>
-            <section id="form-preview" class="form-container" ondragover="allowDrop(event)" ondrop="drop(event)">
-                <form id="generated-form">
-                    <!-- Элементы формы будут добавляться динамически через JS -->
-                </form>
+            <!-- Контейнер превью -->
+            <section id="form-preview" class="form-container">
+                <header id="form-header"></header>
+                <main id="form-main"></main>
+                <footer id="form-footer"></footer>
             </section>
 
             <h2>Сгенерированный код</h2>
             <div class="row">
+                <!-- HTML-вывод -->
                 <section class="col-md-6">
                     <h3>HTML</h3>
                     <textarea id="html-output" class="form-control" readonly></textarea>
                 </section>
+                <!-- CSS-вывод -->
                 <section class="col-md-6">
                     <h3>CSS</h3>
                     <textarea id="css-output" class="form-control"></textarea>
-                </section>
-            </div>
-            <div class="row mt-3">
-                <section class="col-md-6">
-                    <h3>React (JSX)</h3>
-                    <textarea id="react-output" class="form-control" readonly></textarea>
-                </section>
-                <section class="col-md-6">
-                    <h3>CSS (React)</h3>
-                    <textarea id="react-css-textarea" class="form-control"></textarea>
                 </section>
             </div>
         </section>
     </section>
 
     <!-- Модальное окно редактора стилей -->
-    <dialog id="style-editor-modal" class="modal">
+    <div id="style-editor-modal" class="modal">
         <div class="modal-content">
             <h3 id="style-editor-title">Добавить элемент</h3>
+            <!-- Поле для текста -->
             <div class="mb-3" id="element-text-container">
                 <label id="element-text-label" for="element-text" class="form-label"></label>
                 <input type="text" id="element-text" class="form-control" placeholder="">
             </div>
+            <!-- Поле для изображения -->
             <div class="mb-3" id="element-file-container" style="display: none;">
                 <label for="element-file" class="form-label">Выберите изображение:</label>
                 <input type="file" id="element-file" class="form-control" accept="image/*">
             </div>
+            <!-- Поля стилей -->
             <div class="mb-3">
                 <label for="style-bg-color" class="form-label">Цвет фона:</label>
                 <input type="color" id="style-bg-color" class="form-control form-control-color">
@@ -121,11 +125,11 @@
                 <label for="style-border-radius" class="form-label">Радиус границы (px):</label>
                 <input type="number" id="style-border-radius" class="form-control" min="0" placeholder="e.g., 4">
             </div>
-            <div class="mb-3">
+            <div class="mb-3" id="style-width-container">
                 <label for="style-width" class="form-label">Ширина (px):</label>
                 <input type="number" id="style-width" class="form-control" min="0" placeholder="e.g., 200">
             </div>
-            <div class="mb-3">
+            <div class="mb-3" id="style-height-container">
                 <label for="style-height" class="form-label">Высота (px):</label>
                 <input type="number" id="style-height" class="form-control" min="0" placeholder="e.g., 40">
             </div>
@@ -133,14 +137,15 @@
                 <label for="style-rotate" class="form-label">Поворот (градусы):</label>
                 <input type="number" id="style-rotate" class="form-control" placeholder="e.g., 0">
             </div>
+            <!-- Кнопки -->
             <div class="button-group">
                 <button onclick="cancelStyleEditor()" class="btn btn-secondary">Отмена</button>
                 <button onclick="submitStyleEditor()" class="btn btn-primary" id="style-editor-submit">Добавить</button>
             </div>
         </div>
-    </dialog>
+    </div>
 
-    <!-- Контекстное меню для удаления и редактирования -->
+    <!-- Контекстное меню -->
     <div id="context-menu" class="context-menu">
         <div class="context-menu-item" onclick="editElement()">Редактировать</div>
         <div class="context-menu-item" onclick="deleteElement()">Удалить</div>
@@ -148,50 +153,69 @@
 </main>
 
 <style>
+    /* Стили для превью */
     #form-preview {
         border: 1px solid #ccc;
-        padding: 20px;
-        min-height: 300px;
-        width: 1366px;
-        height: 768px;
-        position: relative;
-        display: block;
+        width: 1024px;
         background-color: #f8f9fa;
         overflow: auto;
+        display: flex;
+        flex-direction: column;
+        height: auto;
     }
+    /* Стили для элементов */
     .element {
         padding: 5px;
         border: 1px dashed #ccc;
-        cursor: move;
-        position: absolute;
-        flex: 0 0 auto;
         width: fit-content;
+        display: block;
+        margin-bottom: 10px;
     }
-    .element:hover {
+    /* Стили для article */
+    .article-container {
+        border: 1px solid #ccc;
+        background-color: white;
+        padding: 10px;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: wrap;
+    }
+    #form-header.horizontal .element, #form-main.horizontal .element, #form-footer.horizontal .element,
+    #form-header.horizontal .article-container, #form-main.horizontal .article-container, #form-footer.horizontal .article-container {
+        margin-right: 10px;
+        margin-bottom: 0;
+    }
+    .element:hover, .article-container:hover {
         background-color: #e9ecef;
     }
+    /* Стили для маркеров изменения размера линии */
     .resize-handle {
         width: 10px;
         height: 10px;
         background-color: #007BFF;
         border-radius: 50%;
-        position: absolute;
+        position: relative;
         cursor: ew-resize;
         top: 50%;
         transform: translateY(-50%);
         z-index: 10;
+        display: inline-block;
+        margin: 0 5px;
     }
     .resize-left {
-        left: -5px;
+        margin-right: 5px;
     }
     .resize-right {
-        right: -5px;
+        margin-left: 5px;
     }
+    /* Стили для textarea */
     textarea {
         width: 100%;
         height: 200px;
         margin-top: 10px;
     }
+    /* Стили для модального окна */
     .modal {
         display: none;
         position: fixed;
@@ -234,6 +258,7 @@
     .button-group button {
         margin-left: 10px;
     }
+    /* Стили для контекстного меню */
     .context-menu {
         display: none;
         position: absolute;
@@ -258,30 +283,9 @@
     }
 </style>
 
-<script src="{% static 'projects/scripts.js' %}"></script>
-
-<!-- Добавляем скрипт для инициализации elements и управления размером формы -->
 <script>
-    // Загружаем элементы из проекта, если они есть
-    {% if project and project.elements %}
-        elements = {{ project.elements|safe }};
-        updatePreview();
-    {% endif %}
-
-    // Функция для изменения размера формы
-    function changeFormSize() {
-        console.log('changeFormSize called');
-        const formSizeSelect = document.getElementById('form-size');
-        const [width, height] = formSizeSelect.value.split('x').map(Number);
-        const formPreview = document.getElementById('form-preview');
-        formPreview.style.width = `${width}px`;
-        formPreview.style.height = `${height}px`;
-        updatePreview(); // Перезапускаем предпросмотр для пересчета размеров
-    }
-
-    // Устанавливаем начальный размер формы при загрузке
-    window.addEventListener('load', () => {
-        changeFormSize();
-    });
+    // Передача элементов проекта из Django в JavaScript
+    const projectElements = {{ project.elements|safe|default:'[]' }};
 </script>
+<script src="{% static 'projects/scripts.js' %}"></script>
 {% endblock %}
